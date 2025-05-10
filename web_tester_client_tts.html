@@ -6,44 +6,56 @@
     <title>English Voice Tester (Client-Side TTS)</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { color: #007bff; }
-        input[type="file"] { margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 700px; margin: auto;}
+        h1 { color: #007bff; text-align: center;}
+        p { line-height: 1.6; }
+        input[type="file"] { margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; width: calc(100% - 22px); }
         button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         .output-section { margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 4px; }
-        .output-section h3 { margin-top: 0; color: #333; }
-        #transcribedText { white-space: pre-wrap; font-family: monospace; background-color: #fff; padding: 10px; border: 1px solid #ccc; border-radius: 4px; min-height: 50px;}
-        #aiResponseText { margin-top:10px; white-space: pre-wrap; font-family: monospace; background-color: #fff; padding: 10px; border: 1px solid #ccc; border-radius: 4px; min-height: 50px;}
-        /* 移除了 audio 播放器，因为我们会直接播放语音 */
-        .controls { margin-top: 10px; }
-        #voiceSelect { margin-right: 10px; padding: 5px; }
-        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; display: none; margin: 10px auto; }
+        .output-section h3 { margin-top: 0; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;}
+        #transcribedText, #aiResponseText {
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #fff;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            min-height: 50px;
+            margin-bottom: 15px;
+        }
+        .controls { margin-top: 10px; padding-top:10px; border-top: 1px dashed #ccc;}
+        .controls label { font-weight: bold; margin-right: 5px;}
+        #voiceSelect { margin-right: 10px; padding: 8px; border-radius: 4px; border: 1px solid #ccc;}
+        #speakAiResponseButton { background-color: #28a745;}
+        #speakAiResponseButton:hover { background-color: #1e7e34;}
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; display: none; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>English Voice Upload & Test (Client-Side TTS)</h1>
-        <p>Upload an English audio file to get transcribed text. The AI response will be spoken by your browser.</p>
+        <h1>English Voice Tester (Client-Side TTS)</h1>
+        <p>Upload an English audio file to get a <strong>simulated</strong> transcribed text. The AI response (also simulated) will then be spoken by your browser's built-in Text-to-Speech engine.</p>
+        <p><strong>Note:</strong> Automatic Speech Recognition (ASR) from the uploaded audio is <strong>simulated</strong> in this demo. This page primarily demonstrates client-side TTS.</p>
 
         <input type="file" id="audioFile" accept="audio/*">
         <button id="processButton" onclick="processAudio()">Process Audio</button>
         <div class="loader" id="loader"></div>
 
         <div class="output-section" id="outputSection" style="display: none;">
-            <h3>Transcribed Text (from your audio - SIMULATED):</h3>
+            <h3>Transcribed Text (SIMULATED):</h3>
             <div id="transcribedText"></div>
 
-            <h3>AI Response (Text - SIMULATED):</h3>
+            <h3>AI Response (SIMULATED):</h3>
             <div id="aiResponseText">Waiting for AI...</div>
 
             <div class="controls">
                 <h3>AI Voice Controls:</h3>
                 <label for="voiceSelect">Select Voice:</label>
                 <select id="voiceSelect"></select>
-                <button id="speakAiResponseButton" disabled>Speak AI Response</button>
+                <button id="speakAiResponseButton" disabled title="Speak the AI response text above">Speak AI Response</button>
             </div>
         </div>
     </div>
@@ -60,88 +72,99 @@
 
         let speechSynthesis = window.speechSynthesis;
         let voices = [];
-        let currentAiResponseText = ""; // To store the AI text for re-speaking
+        let currentAiResponseText = "";
 
         function populateVoiceList() {
             if(typeof speechSynthesis === 'undefined') {
-                alert('Sorry, your browser does not support text-to-speech.');
+                alert('Sorry, your browser does not support text-to-speech. Voice controls will be disabled.');
+                speakAiResponseButton.disabled = true;
+                voiceSelect.disabled = true;
                 return;
             }
             voices = speechSynthesis.getVoices();
-            voiceSelect.innerHTML = ''; // Clear existing options
+            voiceSelect.innerHTML = '';
 
-            // Filter for English voices if possible, or list all
-            const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
+            const englishVoices = voices.filter(voice => voice.lang.toLowerCase().startsWith('en'));
             const voicesToList = englishVoices.length > 0 ? englishVoices : voices;
 
-
-            for(let i = 0; i < voicesToList.length; i++) {
+            voicesToList.forEach(voice => {
                 const option = document.createElement('option');
-                option.textContent = `${voicesToList[i].name} (${voicesToList[i].lang})`;
-                if(voicesToList[i].default) {
-                    option.textContent += ' -- DEFAULT';
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if(voice.default && voice.lang.toLowerCase().startsWith('en')) {
+                    option.selected = true; // Pre-select default English voice
                 }
-                option.setAttribute('data-lang', voicesToList[i].lang);
-                option.setAttribute('data-name', voicesToList[i].name);
+                option.setAttribute('data-lang', voice.lang);
+                option.setAttribute('data-name', voice.name);
                 voiceSelect.appendChild(option);
+            });
+            if (voicesToList.length === 0 && voices.length > 0) { // If no English voices but others exist
+                 voiceSelect.innerHTML = '<option value="">No English voices found</option>';
+            } else if (voices.length === 0){
+                 voiceSelect.innerHTML = '<option value="">No voices available</option>';
             }
         }
 
-        // Populate voice list when voices are loaded
-        if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = populateVoiceList;
+        if (typeof speechSynthesis !== 'undefined') {
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoiceList;
+            }
+            populateVoiceList(); // Initial call, as onvoiceschanged might not fire immediately or on all browsers
+        } else {
+             alert('Sorry, your browser does not support text-to-speech. Voice controls will be disabled.');
+             speakAiResponseButton.disabled = true;
+             voiceSelect.disabled = true;
         }
-        // Fallback for browsers that don't fire onvoiceschanged (like some older Chrome versions)
-        setTimeout(populateVoiceList, 100);
 
 
-        function speakText(text, lang = 'en-US') {
+        function speakText(text) {
             if (!speechSynthesis || !text) {
                 console.error("Speech synthesis not available or no text to speak.");
+                alert("Cannot speak: Speech synthesis not ready or no text provided.");
                 return;
             }
             if (speechSynthesis.speaking) {
                 console.warn("SpeechSynthesis is already speaking. Cancelling previous utterance.");
-                speechSynthesis.cancel(); // Cancel any ongoing speech
-                // A small delay might be needed before starting a new utterance on some browsers
-                setTimeout(() => startSpeaking(text, lang), 100);
+                speechSynthesis.cancel();
+                setTimeout(() => startSpeakingActual(text), 100); // Delay for robustness
                 return;
             }
-            startSpeaking(text, lang);
+            startSpeakingActual(text);
         }
 
-        function startSpeaking(text, lang){
+        function startSpeakingActual(text) {
             const utterance = new SpeechSynthesisUtterance(text);
-            const selectedVoiceName = voiceSelect.selectedOptions[0] ? voiceSelect.selectedOptions[0].getAttribute('data-name') : null;
+            const selectedOption = voiceSelect.selectedOptions[0];
+            const selectedVoiceName = selectedOption ? selectedOption.getAttribute('data-name') : null;
 
             if (selectedVoiceName) {
                 utterance.voice = voices.find(voice => voice.name === selectedVoiceName);
             } else {
-                 // Fallback to a default English voice or the first available English voice
-                let defaultVoice = voices.find(voice => voice.lang.startsWith('en') && voice.default);
-                if (!defaultVoice) {
-                    defaultVoice = voices.find(voice => voice.lang.startsWith('en'));
+                let defaultEnglishVoice = voices.find(voice => voice.lang.toLowerCase().startsWith('en') && voice.default);
+                if (!defaultEnglishVoice) {
+                    defaultEnglishVoice = voices.find(voice => voice.lang.toLowerCase().startsWith('en'));
                 }
-                if (defaultVoice) {
-                    utterance.voice = defaultVoice;
-                }
+                if (defaultEnglishVoice) utterance.voice = defaultEnglishVoice;
             }
-            // If no specific English voice found, browser will use its default
 
-            utterance.pitch = 1; // Range 0-2
-            utterance.rate = 1;  // Range 0.1-10
-            utterance.volume = 1; // Range 0-1
+            utterance.pitch = 1;
+            utterance.rate = 1;
+            utterance.volume = 1;
 
+            utterance.onstart = () => {
+                speakAiResponseButton.textContent = "Stop Speaking";
+                speakAiResponseButton.disabled = false;
+            }
             utterance.onend = () => {
                 console.log("Speech finished.");
-                speakAiResponseButton.disabled = false; // Re-enable button
+                speakAiResponseButton.textContent = "Speak AI Response";
+                speakAiResponseButton.disabled = false;
             };
             utterance.onerror = (event) => {
                 console.error("SpeechSynthesisUtterance.onerror", event);
-                speakAiResponseButton.disabled = false; // Re-enable button
+                alert(`Error during speech: ${event.error}`);
+                speakAiResponseButton.textContent = "Speak AI Response";
+                speakAiResponseButton.disabled = false;
             };
-
-            speakAiResponseButton.disabled = true; // Disable button while speaking
             speechSynthesis.speak(utterance);
         }
 
@@ -151,59 +174,50 @@
                 alert("Please select an audio file first.");
                 return;
             }
-
             const file = audioFileInput.files[0];
-            // For this pure client-side TTS demo, we don't need FormData or backend calls for ASR.
-            // ASR is still SIMULATED here.
 
             processButton.disabled = true;
+            speakAiResponseButton.disabled = true;
+            speakAiResponseButton.textContent = "Speak AI Response";
+            if(speechSynthesis && speechSynthesis.speaking) speechSynthesis.cancel();
             loader.style.display = 'block';
             outputSection.style.display = 'none';
             transcribedTextDiv.textContent = 'Simulating ASR...';
             aiResponseTextDiv.textContent = 'Waiting for AI...';
-            speakAiResponseButton.disabled = true;
-            if(speechSynthesis.speaking) speechSynthesis.cancel(); // Stop any ongoing speech
 
             console.log("Simulating ASR for file:", file.name);
 
-            // Simulate ASR (Speech-to-Text)
             setTimeout(() => {
-                // !!! IMPORTANT: This is still DUMMY ASR data.
-                // Real ASR from an uploaded file in pure JS without a backend is very complex and limited.
-                // You might look into libraries like 'ffmpeg.wasm' + a WASM ASR engine,
-                // but that's a much bigger project.
-                const dummyTranscribedText = `This is a SIMULATED transcription of your audio file: "${file.name}". You said something about practicing English.`;
+                const dummyTranscribedText = `This is a SIMULATED transcription of your audio file: "${file.name}". You might have said something like "Hello, how are you today?" or perhaps "Tell me about the weather."`;
                 transcribedTextDiv.textContent = dummyTranscribedText;
                 outputSection.style.display = 'block';
 
-                // Simulate NLU/AI Response Generation
                 setTimeout(() => {
-                    currentAiResponseText = `Okay, I heard you talk about "${file.name}". That's interesting! Let's discuss it further. How can I help you with that topic? This response will be spoken by your browser.`;
+                    currentAiResponseText = `Okay, I "heard" you mention something related to "${file.name}". Based on your simulated input "Hello, how are you today?", my simulated response is: "I am doing well, thank you for asking! I am a browser-based voice assistant." This response will be spoken by your browser.`;
                     aiResponseTextDiv.textContent = currentAiResponseText;
-                    speakAiResponseButton.disabled = false; // Enable the speak button
+                    speakAiResponseButton.disabled = false;
 
-                    // Automatically speak the AI response once generated
-                    speakText(currentAiResponseText);
+                    speakText(currentAiResponseText); // Automatically speak
 
                     loader.style.display = 'none';
                     processButton.disabled = false;
-                    console.log("Simulated processing complete. AI response ready to be spoken.");
-                }, 1500); // Simulate AI response delay
+                    console.log("Simulated processing complete.");
+                }, 1500);
 
-            }, 2000); // Simulate ASR delay
+            }, 2000);
         }
 
         speakAiResponseButton.addEventListener('click', () => {
-            if (currentAiResponseText) {
+            if (speechSynthesis && speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+                speakAiResponseButton.textContent = "Speak AI Response";
+                speakAiResponseButton.disabled = false;
+            } else if (currentAiResponseText) {
                 speakText(currentAiResponseText);
             } else {
-                alert("No AI response to speak yet.");
+                alert("No AI response to speak yet. Please process an audio file first.");
             }
         });
-
-        // Initial population of voice list
-        populateVoiceList();
-
     </script>
 </body>
 </html>
