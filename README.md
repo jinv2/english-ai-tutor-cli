@@ -45,3 +45,23 @@ It allows uploading an audio file (ASR is simulated) and features client-side Te
 *   **File:** `web_tester_client_tts.html`
 
 **Note:** The Automatic Speech Recognition (ASR) from the uploaded audio file is **simulated** in this web version. The Text-to-Speech (TTS) for AI responses is handled directly by your browser.
+
+---
+
+## Web-Based Voice Tester (Client-Side TTS, Simulated ASR)
+
+This repository also includes a web-based tool for testing voice interaction concepts, primarily demonstrating client-side Text-to-Speech (TTS) capabilities of your browser.
+
+*   **Access the Web Tester:** [https://jinv2.github.io/english-ai-tutor-cli/web_tester_client_tts.html](https://jinv2.github.io/english-ai-tutor-cli/web_tester_client_tts.html)
+*   **File in this repository:** `web_tester_client_tts.html`
+
+**How it works:**
+1.  Upload an English audio file (the content of the audio is not actually processed for transcription).
+2.  The page will show a **simulated** transcription of the audio.
+3.  It will then generate a **simulated** AI text response.
+4.  This AI text response will be automatically spoken aloud using your browser's built-in Text-to-Speech engine.
+5.  You can select different available voices (if your browser provides options) and click "Speak AI Response" to hear it again.
+
+**Note:**
+*   The Automatic Speech Recognition (ASR) from the uploaded audio file is **purely simulated** in this web version. It does not actually convert your speech to text.
+*   The Text-to-Speech (TTS) for AI responses is handled directly by your web browser via the Web Speech API. Voice quality and availability depend on your browser and operating system.
