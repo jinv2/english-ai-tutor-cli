@@ -34,3 +34,14 @@ This is the initial version focusing on text-based interaction.
 
 Contributions, issues, and feature requests are welcome!
 Feel free to check [issues page](https://github.com/jinv2/english-ai-tutor-cli/issues) if you want to contribute.
+---
+
+## Web-Based Voice Tester (Client-Side TTS, Simulated ASR)
+
+This repository also includes a web-based tool for testing voice interaction concepts.
+It allows uploading an audio file (ASR is simulated) and features client-side Text-to-Speech for AI responses.
+
+*   **Access the Web Tester:** [Link to be added after GitHub Pages setup for this file]
+*   **File:** `web_tester_client_tts.html`
+
+**Note:** The Automatic Speech Recognition (ASR) from the uploaded audio file is **simulated** in this web version. The Text-to-Speech (TTS) for AI responses is handled directly by your browser.
